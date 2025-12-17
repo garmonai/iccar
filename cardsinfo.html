@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AutoImport — авто из-за рубежа</title>
+
+  <!-- Мобильное "приложение" в виде одностраничного сайта -->
+  <style>
+    :root {
+      --bg-dark: #020617;   /* почти чёрный с синим оттенком */
+      --bg-deep: #0b1220;   /* тёмно-синий для блоков */
+      --bg-card: #0f172a;   /* тёмно-синий для карточек */
+      --accent:  #2563eb;   /* ярко-синий акцент */
+      --accent-soft: #1d4ed8;
+      --text-main: #e5e7eb;
+      --text-muted: #9ca3af;
+      --danger: #ef4444;
+      --radius-lg: 18px;
+      --radius-md: 14px;
+      --radius-pill: 999px;
+      --shadow-soft: 0 18px 40px rgba(15, 23, 42, 0.75);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text-main);
+      background-color: var(--bg-dark);
+      display: flex;
+      justify-content: center;
+      padding: 16px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Размытый фон с машиной */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image: url("car-blur.jpg"); /* ЗАМЕНИТЕ на свой путь к изображению машины */
+      background-size: cover;
+      background-position: center;
+      filter: blur(14px);
+      transform: scale(1.06);
+      z-index: -2;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at top, rgba(37, 99, 235, 0.45), transparent 55%),
+                  radial-gradient(circle at bottom, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.98));
+      z-index: -1;
+    }
+
+    /* Основной контейнер как экран мобильного приложения */
+    .app-shell {
+      width: 100%;
+      max-width: 430px;
+      min-height: calc(100vh - 32px);
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.98));
+      border-radius: 32px;
+      box-shadow: var(--shadow-soft);
+      padding: 14px 14px 72px;
+      display: flex;
+      flex-direction: column;
+      backdrop-filter: blur(18px);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Верхняя строка / статусбар */
+    .top-status {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: var(--text-muted);
+      opacity: 0.9;
+      margin-bottom: 4px;
+    }
+
+    .time {
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+
+    .signal-dots {
+      display: flex;
+      gap: 3px;
+      align-items: center;
+    }
+
+    .signal-dots span {
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: rgba(148, 163, 184, 0.9);
+    }
+
+    .battery {
+      width: 18px;
+      height: 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(148, 163, 184, 0.9);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .battery::after {
+      content: "";
+      position: absolute;
+      inset: 1px;
+      border-radius: 3px;
+      background: linear-gradient(90deg, #22c55e, #4ade80);
+    }
+
+    /* Заголовок и быстрые действия */
+    .app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 4px 4px 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 12px;
+      background: radial-gradient(circle at 30% 10%, #60a5fa, #1d4ed8 48%, #020617 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 14px;
+      color: #eff6ff;
+      box-shadow: 0 10px 25px rgba(37, 99, 235, 0.7);
+    }
+
+    .brand-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .brand-name {
+      font-size: 15px;
+      font-weight: 650;
+      letter-spacing: 0.04em;
+    }
+
+    .brand-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .icon-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      background: radial-gradient(circle at 0 0, rgba(59, 130, 246, 0.35), rgba(15, 23, 42, 0.95));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-main);
+      font-size: 16px;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .icon-btn:active {
+      transform: scale(0.96);
+    }
+
+    /* Основной скролл-контейнер */
+    .scroll-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 2px 8px;
+      scroll-behavior: smooth;
+    }
+
+    .scroll-area::-webkit-scrollbar {
+      width: 0;
+      height: 0;
+    }
+
+    /* Hero-блок */
+    .hero {
+      margin: 4px 2px 18px;
+      padding: 16px 14px 14px;
+      border-radius: var(--radius-lg);
+      background: radial-gradient(circle at top left, rgba(59, 130, 246, 0.45), transparent 60%),
+                  radial-gradient(circle at bottom right, rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.95));
+      border: 1px solid rgba(59, 130, 246, 0.55);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-badge-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.55);
+      border: 1px solid rgba(191, 219, 254, 0.4);
+      backdrop-filter: blur(12px);
+    }
+
+    .hero-badge-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: radial-gradient(circle, #22c55e, #15803d);
+      box-shadow: 0 0 10px rgba(22, 163, 74, 0.9);
+    }
+
+    .hero-rating {
+      font-size: 11px;
+      color: #bfdbfe;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .hero-title {
+      font-size: 20px;
+      font-weight: 750;
+      line-height: 1.2;
+      margin-bottom: 6px;
+    }
+
+    .hero-title span {
+      color: #bfdbfe;
+    }
+
+    .hero-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      max-width: 260px;
+      margin-bottom: 12px;
+    }
+
+    .hero-pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .hero-pill {
+      font-size: 11px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(191, 219, 254, 0.4);
+      background: rgba(15, 23, 42, 0.4);
+      color: #dbeafe;
+    }
+
+    .hero-cta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .btn-primary {
+      flex: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 9px 12px;
+      border-radius: var(--radius-pill);
+      border: none;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      box-shadow: 0 14px 32px rgba(37, 99, 235, 0.75);
+      color: #eff6ff;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-primary:active {
+      transform: translateY(1px) scale(0.98);
+      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.6);
+    }
+
+    .btn-secondary {
+      padding: 8px 12px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      background: rgba(15, 23, 42, 0.7);
+      color: var(--text-main);
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .hero-car-badge {
+      position: absolute;
+      right: 12px;
+      bottom: 12px;
+      padding: 8px 10px;
+      border-radius: 18px;
+      background: rgba(15, 23, 42, 0.72);
+      border: 1px solid rgba(191, 219, 254, 0.4);
+      font-size: 11px;
+      color: #dbeafe;
+      backdrop-filter: blur(14px);
+    }
+
+    .hero-car-badge strong {
+      display: block;
+      font-size: 13px;
+    }
+
+    /* Поиск и фильтры */
+    .section-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 4px 6px 8px;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #cbd5f5;
+    }
+
+    .section-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .search-row {
+      display: flex;
+      gap: 8px;
+      margin: 0 4px 14px;
+    }
+
+    .search-input-wrap {
+      flex: 1;
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 9px 30px 9px 28px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(51, 65, 85, 0.9);
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text-main);
+      font-size: 13px;
+      outline: none;
+    }
+
+    .search-input::placeholder {
+      color: rgba(148, 163, 184, 0.9);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px;
+      color: rgba(148, 163, 184, 0.9);
+    }
+
+    .search-clear {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px;
+      color: rgba(148, 163, 184, 0.9);
+      cursor: pointer;
+      display: none;
+    }
+
+    .filter-btn {
+      width: 40px;
+      border-radius: 18px;
+      border: 1px solid rgba(37, 99, 235, 0.7);
+      background: radial-gradient(circle at top, rgba(37, 99, 235, 0.55), rgba(15, 23, 42, 0.95));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #dbeafe;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    /* Лента преимуществ */
+    .chips-row {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 0 4px 10px;
+      margin-bottom: 2px;
+    }
+
+    .chips-row::-webkit-scrollbar {
+      height: 0;
+    }
+
+    .chip {
+      white-space: nowrap;
+      font-size: 11px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(30, 64, 175, 0.85);
+      background: rgba(15, 23, 42, 0.8);
+      color: #e5e7eb;
+    }
+
+    .chip.chip-active {
+      background: linear-gradient(135deg, #1d4ed8, #60a5fa);
+      border-color: transparent;
+      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.65);
+      color: #eff6ff;
+    }
+
+    /* Каталог авто */
+    .cars-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin: 0 2px 16px;
+    }
+
+    .car-card {
+      border-radius: var(--radius-md);
+      background: radial-gradient(circle at top, rgba(37, 99, 235, 0.35), rgba(15, 23, 42, 0.98));
+      border: 1px solid rgba(30, 64, 175, 0.9);
+      padding: 10px 10px 10px;
+      display: flex;
+      gap: 10px;
+      position: relative;
+    }
+
+    .car-card::after {
+      content: attr(data-country);
+      position: absolute;
+      right: 10px;
+      top: 10px;
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(191, 219, 254, 0.35);
+      color: #bfdbfe;
+    }
+
+    .car-photo {
+      width: 92px;
+      height: 72px;
+      border-radius: 14px;
+      background-size: cover;
+      background-position: center;
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .car-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(15, 23, 42, 0.7), transparent 60%);
+    }
+
+    .car-badge {
+      position: absolute;
+      left: 6px;
+      bottom: 6px;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.7);
+      color: #bfdbfe;
+    }
+
+    .car-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .car-title-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .car-title {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .car-price {
+      font-size: 13px;
+      font-weight: 650;
+      color: #bfdbfe;
+    }
+
+    .car-meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .meta-pill {
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(30, 64, 175, 0.7);
+    }
+
+    .car-tags-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 3px;
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .car-tags-row span {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .car-cta {
+      margin-top: 4px;
+      display: flex;
+      gap: 6px;
+    }
+
+    .car-cta button {
+      flex: 1;
+      padding: 6px 0;
+      font-size: 11px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .car-cta .btn-outline {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      color: var(--text-main);
+    }
+
+    .car-cta .btn-solid {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #eff6ff;
+      box-shadow: 0 10px 22px rgba(37, 99, 235, 0.7);
+    }
+
+    /* Шаги покупки */
+    .steps-section {
+      margin: 0 4px 14px;
+      padding: 10px 10px 8px;
+      border-radius: var(--radius-md);
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid rgba(31, 41, 55, 0.9);
+    }
+
+    .steps-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .steps-header span {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .step-number {
+      width: 18px;
+      height: 18px;
+      border-radius: 6px;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(37, 99, 235, 0.8);
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #bfdbfe;
+      flex-shrink: 0;
+    }
+
+    .step strong {
+      color: #e5e7eb;
+    }
+
+    /* Блок заявки */
+    .cta-section {
+      margin: 0 4px 10px;
+      padding: 10px 10px 10px;
+      border-radius: var(--radius-md);
+      background: radial-gradient(circle at top left, rgba(37, 99, 235, 0.6), rgba(15, 23, 42, 0.95));
+      border: 1px solid rgba(37, 99, 235, 0.9);
+    }
+
+    .cta-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .cta-text {
+      font-size: 11px;
+      color: #e5e7eb;
+      margin-bottom: 8px;
+    }
+
+    .form-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .input {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(148, 163, 184, 0.75);
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text-main);
+      font-size: 12px;
+      outline: none;
+    }
+
+    .input::placeholder {
+      color: rgba(156, 163, 175, 0.95);
+    }
+
+    .form-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      color: rgba(226, 232, 240, 0.85);
+    }
+
+    .form-footer small {
+      max-width: 60%;
+    }
+
+    .form-footer span {
+      font-weight: 600;
+    }
+
+    /* Нижняя навигация — как в приложении */
+    .bottom-nav {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 10px;
+      width: calc(100% - 64px);
+      max-width: 360px;
+      padding: 7px 8px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.96);
+      border: 1px solid rgba(30, 64, 175, 0.85);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      font-size: 10px;
+      color: var(--text-muted);
+      backdrop-filter: blur(16px);
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      flex: 1;
+      cursor: pointer;
+    }
+
+    .nav-item span {
+      font-size: 14px;
+    }
+
+    .nav-item.active {
+      color: #bfdbfe;
+    }
+
+    .nav-item.active .nav-pill {
+      background: radial-gradient(circle at top, rgba(37, 99, 235, 0.7), rgba(15, 23, 42, 0.95));
+      box-shadow: 0 8px 18px rgba(37, 99, 235, 0.8);
+    }
+
+    .nav-pill {
+      width: 30px;
+      height: 22px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1px;
+    }
+
+    /* Кнопка "наверх" для длинных списков (на случай скролла) */
+    .scroll-top-btn {
+      position: fixed;
+      right: 22px;
+      bottom: 90px;
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      border: none;
+      background: radial-gradient(circle at top, rgba(37, 99, 235, 0.9), rgba(15, 23, 42, 0.95));
+      color: #eff6ff;
+      font-size: 16px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 25px rgba(37, 99, 235, 0.75);
+      cursor: pointer;
+      z-index: 5;
+    }
+
+    .scroll-top-btn.show {
+      display: flex;
+    }
+
+    /* Адаптация под чуть более широкие экраны */
+    @media (min-width: 768px) {
+      body {
+        padding: 32px;
+      }
+
+      .app-shell {
+        border-radius: 36px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <!-- "Статусбар" телефона -->
+    <div class="top-status">
+      <div class="time" id="statusTime">12:30</div>
+      <div class="signal-dots">
+        <span></span><span></span><span></span><span></span>
+      </div>
+      <div class="battery"></div>
+    </div>
+
+    <!-- Шапка приложения -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-logo">AI</div>
+        <div class="brand-text">
+          <div class="brand-name">AutoImport</div>
+          <div class="brand-sub">Авто под ключ из Европы, Кореи, США</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="openCallback" title="Перезвоните мне">☎</button>
+        <button class="icon-btn" id="openMenu" title="Меню">☰</button>
+      </div>
+    </header>
+
+    <main class="scroll-area" id="scrollArea">
+      <!-- HERO -->
+      <section class="hero" id="hero">
+        <div class="hero-badge-row">
+          <div class="hero-badge">
+            <span class="hero-badge-dot"></span>
+            <span>Подбор и доставка за 25–35 дней</span>
+          </div>
+          <div class="hero-rating">★ 4.9 / 5 · 300+ авто доставлено</div>
+        </div>
+
+        <h1 class="hero-title">
+          Авто из-за рубежа
+          <span>как из салона</span> — без переплат в РФ
+        </h1>
+
+        <p class="hero-subtitle">
+          Подбираем и ввозим автомобили из Европы, Кореи, ОАЭ и США: проверка истории,
+          торг, логистика, растаможка и оформление под ключ.
+        </p>
+
+        <div class="hero-pill-row">
+          <span class="hero-pill">Экономия до 30–40% от цены в РФ</span>
+          <span class="hero-pill">Гарантия прозрачного контракта</span>
+          <span class="hero-pill">Видеоотчёт по каждому этапу</span>
+        </div>
+
+        <div class="hero-cta-row">
+          <button class="btn-primary" id="heroOrderBtn">
+            🚗 Рассчитать подбор
+          </button>
+          <button class="btn-secondary" id="heroWhatsAppBtn">
+            💬 WhatsApp
+          </button>
+        </div>
+
+        <div class="hero-car-badge">
+          <strong>от 18 900 $</strong>
+          Hyundai Sonata 2021 · Корея · с доставкой и растаможкой
+        </div>
+      </section>
+
+      <!-- Поиск и фильтр -->
+      <section>
+        <div class="section-title-row">
+          <div>
+            <div class="section-title">Каталог авто</div>
+            <div class="section-sub">Актуальные предложения под заказ</div>
+          </div>
+          <div class="section-sub">Обновление ежедневно</div>
+        </div>
+
+        <div class="search-row">
+          <div class="search-input-wrap">
+            <span class="search-icon">🔍</span>
+            <input
+              type="text"
+              id="searchInput"
+              class="search-input"
+              placeholder="Марка, модель, страна, год..."
+            />
+            <span class="search-clear" id="searchClear">×</span>
+          </div>
+          <button class="filter-btn" id="filtersBtn" title="Фильтры">⚙</button>
+        </div>
+
+        <div class="chips-row" id="chipsRow">
+          <button class="chip chip-active" data-filter="all">Все авто</button>
+          <button class="chip" data-filter="europe">Европа</button>
+          <button class="chip" data-filter="korea">Корея</button>
+          <button class="chip" data-filter="usa">США</button>
+          <button class="chip" data-filter="uae">ОАЭ</button>
+          <button class="chip" data-filter="suv">Кроссоверы</button>
+          <button class="chip" data-filter="sedan">Седаны</button>
+        </div>
+      </section>
+
+      <!-- Список авто -->
+      <section class="cars-grid" id="carsGrid">
+        <article
+          class="car-card"
+          data-country="Корея"
+          data-tags="hyundai sonata корея седан"
+          data-segment="korea sedan"
+        >
+          <div
+            class="car-photo"
+            style="background-image: url('car-korea-1.jpg');"
+          >
+            <div class="car-badge">105 000 км · 2021</div>
+          </div>
+          <div class="car-info">
+            <div class="car-title-row">
+              <h2 class="car-title">Hyundai Sonata 2.0</h2>
+              <div class="car-price">от 18 900 $</div>
+            </div>
+            <div class="car-meta-row">
+              <div class="meta-pill">Бензин · 2.0 · 150 л.с.</div>
+              <div class="meta-pill">Автомат</div>
+              <div class="meta-pill">Без ДТП по базе</div>
+            </div>
+            <div class="car-tags-row">
+              <span>⏱ Срок поставки: 28–35 дней</span>
+              <span>🇰🇷 Аукцион KIA/Hyundai</span>
+            </div>
+            <div class="car-cta">
+              <button class="btn-outline" data-car="Hyundai Sonata 2.0">Подробнее</button>
+              <button class="btn-solid" data-car="Hyundai Sonata 2.0">
+                Рассчитать с доставкой
+              </button>
+            </div>
+          </div>
+        </article>
+
+        <article
+          class="car-card"
+          data-country="Европа"
+          data-tags="bmw 3 europe европа седан"
+          data-segment="europe sedan"
+        >
+          <div
+            class="car-photo"
+            style="background-image: url('car-europe-1.jpg');"
+          >
+            <div class="car-badge">72 000 км · 2019</div>
+          </div>
+          <div class="car-info">
+            <div class="car-title-row">
+              <h2 class="car-title">BMW 320d xDrive</h2>
+              <div class="car-price">от 24 500 €</div>
+            </div>
+            <div class="car-meta-row">
+              <div class="meta-pill">Дизель · 2.0 · 190 л.с.</div>
+              <div class="meta-pill">Полный привод</div>
+              <div class="meta-pill">Сервисная история</div>
+            </div>
+            <div class="car-tags-row">
+              <span>⏱ 30–40 дней с растаможкой</span>
+              <span>🇩🇪 Выкуп у дилера</span>
+            </div>
+            <div class="car-cta">
+              <button class="btn-outline" data-car="BMW 320d xDrive">Подробнее</button>
+              <button class="btn-solid" data-car="BMW 320d xDrive">
+                Получить подбор 3 вариантов
+              </button>
+            </div>
+          </div>
+        </article>
+
+        <article
+          class="car-card"
+          data-country="США"
+          data-tags="tesla model 3 usa электромобиль"
+          data-segment="usa sedan"
+        >
+          <div
+            class="car-photo"
+            style="background-image: url('car-usa-1.jpg');"
+          >
+            <div class="car-badge">Без пробега по РФ</div>
+          </div>
+          <div class="car-info">
+            <div class="car-title-row">
+              <h2 class="car-title">Tesla Model 3 Long Range</h2>
+              <div class="car-price">от 32 800 $</div>
+            </div>
+            <div class="car-meta-row">
+              <div class="meta-pill">Электро · 75 кВт·ч</div>
+              <div class="meta-pill">Запас хода ~480 км</div>
+              <div class="meta-pill">Под ключ в РФ</div>
+            </div>
+            <div class="car-tags-row">
+              <span>⏱ 35–50 дней с портом</span>
+              <span>🇺🇸 Страховой аукцион</span>
+            </div>
+            <div class="car-cta">
+              <button class="btn-outline" data-car="Tesla Model 3">Подробнее</button>
+              <button class="btn-solid" data-car="Tesla Model 3">
+                Узнать итоговый бюджет
+              </button>
+            </div>
+          </div>
+        </article>
+
+        <article
+          class="car-card"
+          data-country="ОАЭ"
+          data-tags="toyota land cruiser uae suv джип"
+          data-segment="uae suv"
+        >
+          <div
+            class="car-photo"
+            style="background-image: url('car-uae-1.jpg');"
+          >
+            <div class="car-badge">До 40% выгоды</div>
+          </div>
+          <div class="car-info">
+            <div class="car-title-row">
+              <h2 class="car-title">Toyota Land Cruiser 300</h2>
+              <div class="car-price">от 82 000 $</div>
+            </div>
+            <div class="car-meta-row">
+              <div class="meta-pill">Бензин · 3.5 Twin Turbo</div>
+              <div class="meta-pill">4x4 · Премиум-комплектация</div>
+            </div>
+            <div class="car-tags-row">
+              <span>⏱ 30–45 дней</span>
+              <span>🇦🇪 Официальный рынок</span>
+            </div>
+            <div class="car-cta">
+              <button class="btn-outline" data-car="Land Cruiser 300">Подробнее</button>
+              <button class="btn-solid" data-car="Land Cruiser 300">
+                Рассчитать доставку в мой город
+              </button>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <!-- Шаги работы -->
+      <section class="steps-section" id="steps">
+        <div class="steps-header">
+          <h2 class="section-title" style="margin:0;">Как всё происходит</h2>
+          <span>Простой и прозрачный процесс</span>
+        </div>
+        <div class="steps">
+          <div class="step">
+            <div class="step-number">1</div>
+            <div>
+              <strong>Заполняете короткую заявку</strong> — мы уточняем бюджет, страну,
+              класс авто и важные опции (пробег, год, комплектация).
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-number">2</div>
+            <div>
+              <strong>Подбор и проверка авто</strong> — ищем варианты на аукционах и у
+              дилеров, проверяем историю по базам и присылаем вам 3–5 лучших предложений
+              с расчётом "под ключ".
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-number">3</div>
+            <div>
+              <strong>Покупка, логистика и таможня</strong> — вы заключаете прозрачный
+              договор, мы выкупаем авто, организуем доставку, растаможку и постанавливаем
+              на учёт в РФ.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Блок заявки -->
+      <section class="cta-section" id="request">
+        <h2 class="cta-title">Рассчитать авто под ваш бюджет</h2>
+        <p class="cta-text">
+          Оставьте контакты — за 15–20 минут подготовим 2–3 оптимальных варианта
+          с учётом доставки, растаможки и всех платежей.
+        </p>
+        <form id="requestForm">
+          <div class="form-row">
+            <input
+              type="text"
+              class="input"
+              id="nameInput"
+              placeholder="Ваше имя"
+            />
+            <input
+              type="tel"
+              class="input"
+              id="phoneInput"
+              placeholder="+7 ___ ___ __ __"
+              required
+            />
+            <input
+              type="text"
+              class="input"
+              id="budgetInput"
+              placeholder="Бюджет и желаемый авто (например: до 3 млн, кроссовер из Кореи)"
+            />
+          </div>
+          <button type="submit" class="btn-primary" style="width:100%; margin-bottom:6px;">
+            Отправить заявку
+          </button>
+          <div class="form-footer">
+            <small>Нажимая кнопку, вы соглашаетесь с обработкой персональных данных.</small>
+            <span>Ответ за 10–15 минут</span>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <!-- Нижняя навигация -->
+    <nav class="bottom-nav">
+      <div class="nav-item active" data-scroll="#hero">
+        <div class="nav-pill">🏠</div>
+        Домой
+      </div>
+      <div class="nav-item" data-scroll="#carsGrid">
+        <div class="nav-pill">🚗</div>
+        Каталог
+      </div>
+      <div class="nav-item" data-scroll="#steps">
+        <div class="nav-pill">📦</div>
+        Этапы
+      </div>
+      <div class="nav-item" data-scroll="#request">
+        <div class="nav-pill">✉</div>
+        Заявка
+      </div>
+    </nav>
+  </div>
+
+  <!-- Кнопка "наверх" -->
+  <button class="scroll-top-btn" id="scrollToTopBtn">↑</button>
+
+  <script>
+    // Обновляем "время" в статусбаре
+    function updateStatusTime() {
+      const el = document.getElementById("statusTime");
+      if (!el) return;
+      const now = new Date();
+      const hh = now.getHours().toString().padStart(2, "0");
+      const mm = now.getMinutes().toString().padStart(2, "0");
+      el.textContent = hh + ":" + mm;
+    }
+    updateStatusTime();
+    setInterval(updateStatusTime, 60_000);
+
+    const scrollArea = document.getElementById("scrollArea");
+    const scrollBtn = document.getElementById("scrollToTopBtn");
+
+    scrollArea.addEventListener("scroll", () => {
+      if (scrollArea.scrollTop > 260) {
+        scrollBtn.classList.add("show");
+      } else {
+        scrollBtn.classList.remove("show");
+      }
+    });
+
+    scrollBtn.addEventListener("click", () => {
+      scrollArea.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    // Навигация внизу
+    document.querySelectorAll(".bottom-nav .nav-item").forEach((item) => {
+      item.addEventListener("click", () => {
+        const target = item.getAttribute("data-scroll");
+        if (target) {
+          const el = document.querySelector(target);
+          if (el) {
+            const top = el.offsetTop - 16;
+            scrollArea.scrollTo({ top, behavior: "smooth" });
+          }
+        }
+        document.querySelectorAll(".bottom-nav .nav-item").forEach((i) =>
+          i.classList.remove("active")
+        );
+        item.classList.add("active");
+      });
+    });
+
+    // Поиск по каталогу
+    const searchInput = document.getElementById("searchInput");
+    const searchClear = document.getElementById("searchClear");
+    const cars = Array.from(document.querySelectorAll(".car-card"));
+
+    function applyFilters() {
+      const text = searchInput.value.trim().toLowerCase();
+      const activeChip = document.querySelector(".chip.chip-active");
+      const filter = activeChip ? activeChip.getAttribute("data-filter") : "all";
+
+      cars.forEach((card) => {
+        const tags = (card.getAttribute("data-tags") || "").toLowerCase();
+        const segment = (card.getAttribute("data-segment") || "").toLowerCase();
+
+        const textMatch = !text || tags.includes(text);
+        const filterMatch = filter === "all" || segment.includes(filter);
+
+        if (textMatch && filterMatch) {
+          card.style.display = "";
+        } else {
+          card.style.display = "none";
+        }
+      });
+    }
+
+    searchInput.addEventListener("input", () => {
+      searchClear.style.display = searchInput.value ? "block" : "none";
+      applyFilters();
+    });
+
+    searchClear.addEventListener("click", () => {
+      searchInput.value = "";
+      searchClear.style.display = "none";
+      applyFilters();
+    });
+
+    // Фильтры по странам/типам
+    document.querySelectorAll(".chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        document.querySelectorAll(".chip").forEach((c) =>
+          c.classList.remove("chip-active")
+        );
+        chip.classList.add("chip-active");
+        applyFilters();
+      });
+    });
+
+    // Обработчики CTA-кнопок
+    const requestForm = document.getElementById("requestForm");
+    const phoneInput = document.getElementById("phoneInput");
+
+    requestForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (!phoneInput.value.trim()) {
+        alert("Введите, пожалуйста, номер телефона, чтобы мы могли с вами связаться.");
+        return;
+      }
+      alert("Спасибо! Мы получили вашу заявку и свяжемся с вами в ближайшее время.");
+      requestForm.reset();
+    });
+
+    document.querySelectorAll(".car-cta .btn-solid").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const car = btn.getAttribute("data-car") || "выбранное авто";
+        document.getElementById("budgetInput").value =
+          "Интересует " + car + " (рассчитать с доставкой и растаможкой)";
+        const el = document.querySelector("#request");
+        if (el) {
+          const top = el.offsetTop - 16;
+          scrollArea.scrollTo({ top, behavior: "smooth" });
+        }
+      });
+    });
+
+    document.getElementById("heroOrderBtn").addEventListener("click", () => {
+      const el = document.querySelector("#request");
+      if (el) {
+        const top = el.offsetTop - 16;
+        scrollArea.scrollTo({ top, behavior: "smooth" });
+      }
+    });
+
+    document.getElementById("heroWhatsAppBtn").addEventListener("click", () => {
+      alert("Откройте WhatsApp и напишите нам по номеру, указанному на сайте.");
+    });
+
+    // Иконки в шапке
+    document.getElementById("openCallback").addEventListener("click", () => {
+      const el = document.querySelector("#request");
+      if (el) {
+        const top = el.offsetTop - 16;
+        scrollArea.scrollTo({ top, behavior: "smooth" });
+      }
+    });
+
+    document.getElementById("openMenu").addEventListener("click", () => {
+      alert("Здесь может быть боковое меню: о компании, кейсы, FAQ и контакты.");
+    });
+  </script>
+</body>
+</html>
